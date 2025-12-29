@@ -1,7 +1,7 @@
 MIT License
 
 Copyright (c) 2016] Rainfrog, Inc.
-Written by Danny Hall, for Rainfrog, Inc.
+Written by Danny Hall, for Rainfrog, Inc., modified for Raspberry Pi by Rich Anthony.
 Based on the prototyping of Robert Swift and input from countless Roastmaster users.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
