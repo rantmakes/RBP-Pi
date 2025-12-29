@@ -1,10 +1,10 @@
 ## Important Notice
 
-This is "pre-release" software for beta testers of Roastmaster for iOS10, due out in Fall 2016. This will NOT working with existing versions of Roastmaster (9 and below).
+This is fork from the "pre-release" software for beta testers of Roastmaster for iOS10, due out in Fall 2016. This will NOT working with prior versions of Roastmaster (9 and below).
 
 ## Roastmaster RDP Probe Host (SBC)
 
-Roastmaster_RDP_Probe_Host is is a customizable Single Board Computer (SBC) application to send thermocouple readings via the Roastmaster Datagram Protocol (RDP) to Roastmaster iOS over a WiFi Network. 
+Roastmaster_RDP_Probe_Host is a customizable Single Board Computer (SBC) application to send sensor readings via the Roastmaster Datagram Protocol (RDP) to Roastmaster iOS over a WiFi Network, developed by Rainfrog Inc. 
 
 Roastmaster is coffee roasting toolkit and data logging software, in which users can log temperature data during their coffee roasting sessions. This logging can be done either manually or via separate electronic thermocouple reading "clients".
 
@@ -17,7 +17,7 @@ Once the ACK has been received, we commence sending our thermocouple data to the
 ## Software Features
 
 • Handles handshaking (SYN/ACK) with Roastmaster
-• Hosts an unlimited number of thermocouple, each sending on a unique channel (RDP supports 16)
+• Hosts an unlimited number of sensors (thermocouple, etc.), each sending on a unique channel (RDP supports 16)
 • Easy to setup and customize for those with limited coding knowledge
 
 ## RDP Protocol Features
@@ -39,7 +39,7 @@ Once the ACK has been received, we commence sending our thermocouple data to the
 3) Enter the Serial number string for this host, as defined in your Roastmaster probe definition
 4) Enter the Network Port for this host, as defined in your Roastmaster probe definition
 5) Modifiy the probes[] array to contain one entry per hardware probe
-6) Set the SBC Board type and Amp Board usage flags
+6) Set the Raspberry Pi Board type and Amp Board usage flags
 
 Other variables that affect execution can be altered in the User Options Section
 
@@ -51,13 +51,9 @@ Adafruit MAX31850: https://www.adafruit.com/products/1727 , Datasheet: https://c
 Using a thermocouple: https://learn.adafruit.com/thermocouple/using-a-thermocouple
 Signal Calibration: https://learn.adafruit.com/calibrating-sensors/maxim-31855-linearization
 
-Arduino IDE
-Installing Libraries in the Arduino IDE: https://www.arduino.cc/en/Guide/Libraries
-
-Arduino Additional Board Manager URLs:
-Feather Huzzah URL: http://arduino.esp8266.com/stable/package_esp8266com_index.json
-
 ## Acknowledgements
+
+Danny Hall (Rainfrog, Inc.) - Thanks for all the support and amazing launching point!
 
 Evan Graham - Thanks for your incredibly imaginative solution to a seemingly insurmountable enigma by developing the first working prototype for getting digital readings from a rotating Gene Cafe drum
 
@@ -68,7 +64,7 @@ Robert Swift - Thanks for your impetus, vision and code prototyping
 MIT License
 
 Copyright (c) 2016] Rainfrog, Inc.
-Written by Danny Hall, for Rainfrog, Inc.
+Written by Danny Hall, for Rainfrog, Inc., modified by Rich Anthony.
 Based on the prototyping of Robert Swift and input from countless Roastmaster users.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
