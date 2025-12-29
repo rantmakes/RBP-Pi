@@ -51,6 +51,7 @@ sudo pip3 install adafruit-circuitpython-mcp9600
 sudo pip3 install adafruit-circuitpython-scd4x
 sudo pip3 install adafruit-circuitpython-bitbangio
 sudo pip3 install adafruit-blinka
+```
 
 ### 2. Network Configuration
 
