@@ -77,7 +77,7 @@ Grant write permissions to the web folder: sudo chmod 777 /var/www/html.
 
 Place monitor.html in /var/www/html/.
 
-Navigate to http://<your-pi-ip>/monitor.html in a browser.
+Navigate to http://YourPi.local/monitor.html in a browser, where YourPi is the host name of your SBC.
 
 ## RDP Channel Mapping
 
