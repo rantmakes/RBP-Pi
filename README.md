@@ -1,19 +1,16 @@
-Here is a comprehensive `README.md` file tailored for your GitHub repository. It covers the hardware, wiring, installation, and usage of the system.
-
----
-
 # RoastProbe-Pi (RBP-Pi)
 
 **A Raspberry Pi Bluetooth Bridge for the SR800 Coffee Roaster**
 
 This project turns a Raspberry Pi into a comprehensive sensor and control monitor for the Fresh Roast SR800 coffee roaster. It broadcasts data via Bluetooth Low Energy (BLE) using the **RoastProbe Protocol**, allowing direct connection to the **Roastmaster** iOS app.
 
-Unlike standard temperature loggers, this system uses a custom **Phase Monitor** to "listen" to the roaster's internal circuitry, decoding the exact Fan Speed (0-9) and Heater Setting (0-9) in real-time by measuring SCR firing angles.
+Unlike standard temperature loggers, this system uses a custom **Phase Monitor** to "listen" to the roaster's internal circuitry, decoding the exact Fan Speed (1-9) and Heater Setting (1-9) in real-time by measuring SCR firing angles.
 
 ## Features
 
 * **Bluetooth BLE Server:** Emulates the RoastProbe protocol for seamless Roastmaster integration.
 * **Real-Time Phase Monitoring:** Uses `pigpio` DMA timing to measure the delay between AC Zero Crossing and SCR pulses (Fan & Heater) with microsecond precision.
+* **Smart Auto-Off:** Automatically detects if the roaster is powered down (via ZCD timeout) and reports settings as "0".
 * **Multi-Sensor Support:**
 * **Bean Temperature:** via MCP9600 Thermocouple Amplifier.
 * **Environmental Data:** Exhaust Temp, Humidity, and CO2 Density (g/m³) via SCD-41.
@@ -38,9 +35,12 @@ Unlike standard temperature loggers, this system uses a custom **Phase Monitor**
 
 ### Phase Monitor Interface (High Voltage)
 
-* **4-Channel Logic Level Shifter:** **Adafruit BSS138** (Critical for protecting Pi GPIOs from 5V logic).
+* 
+**4-Channel Logic Level Shifter:** **Adafruit BSS138** (Critical for protecting Pi GPIOs from 5V logic).
+
+
 * **Optocouplers:** To isolate AC Mains ZCD and SCR pulses (inside the roaster) from the logic shifter.
-* **Resistors:** 220Ω - 470Ω (for Button LED).
+* **Resistors:** 330Ω (for Button LED).
 
 ### Controls
 
@@ -119,7 +119,7 @@ cd RBP-Pi
 To test the system, run the production script manually:
 
 ```bash
-sudo python3 RBP-Pi_Production_0-7-0.py
+sudo python3 RBP-Pi_Production_0-8-0.py
 
 ```
 
@@ -151,7 +151,7 @@ Requires=pigpiod.service
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/RBP-Pi
-ExecStart=/usr/bin/python3 /home/pi/RBP-Pi/RBP-Pi_Production_0-7-0.py
+ExecStart=/usr/bin/python3 /home/pi/RBP-Pi/RBP-Pi_Production_0-8-0.py
 Restart=always
 RestartSec=5
 
@@ -173,7 +173,12 @@ sudo systemctl start roastprobe.service
 
 ## Phase Monitor Calibration
 
-The script maps the delay between the **Zero Crossing** and the **SCR Firing Pulse** to a 0-9 setting using piecewise linear interpolation.
+The script maps the delay between the **Zero Crossing** and the **SCR Firing Pulse** to a **1-9** setting.
+
+**Logic Rules:**
+
+1. **Floor Clamp:** The SR800 dial minimum is 1. Therefore, any delay longer than the "Setting 1" time is clamped to **1**.
+2. **Auto-Off:** The setting reports **0** (Off) *only* if the Zero Crossing signal disappears for more than 200ms (indicating the roaster is unplugged or switched off at the base).
 
 **Current Calibration (SR800 @ 60Hz):**
 
@@ -182,9 +187,8 @@ The script maps the delay between the **Zero Crossing** and the **SCR Firing Pul
 | **9 (Max)** | 0.8 ms | 2.0 ms |
 | **5 (Mid)** | 2.1 ms | 3.9 ms |
 | **1 (Low)** | 2.9 ms | 4.7 ms |
-| **0 (Off)** | > 8.3 ms | > 8.3 ms |
 
-*Note: These values are specific to 60Hz mains frequency. If used in a 50Hz region, recalibration of `HALF_CYCLE_US` and curve points is required.*
+*Note: These values are specific to 60Hz mains frequency. If used in a 50Hz region, recalibration is required.*
 
 ## Shutdown Button
 
