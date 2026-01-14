@@ -1,28 +1,210 @@
-## Important Notice
+Here is a comprehensive `README.md` file tailored for your GitHub repository. It covers the hardware, wiring, installation, and usage of the system.
 
-This is a fork from the "pre-release" software for beta testers of Roastmaster for iOS10. This will NOT working with prior versions of Roastmaster (9 and below).
-This fork converts the C++ Arduino code to Python3 for use in Raspberry Pi or other Linux based SBCs. 
+---
 
-## Roastmaster RDP Probe Host (SBC)
+# RoastProbe-Pi (RBP-Pi)
 
-Roastmaster_RDP_Probe_Host is a customizable Single Board Computer (SBC) application to send sensor readings via the Roastmaster Datagram Protocol (RDP) to Roastmaster iOS over a WiFi Network, developed by Rainfrog Inc. 
+**A Raspberry Pi Bluetooth Bridge for the SR800 Coffee Roaster**
 
-Roastmaster is coffee roasting toolkit and data logging software, in which users can log temperature data during their coffee roasting sessions. This logging can be done either manually or via separate electronic thermocouple reading "clients".
+This project turns a Raspberry Pi into a comprehensive sensor and control monitor for the Fresh Roast SR800 coffee roaster. It broadcasts data via Bluetooth Low Energy (BLE) using the **RoastProbe Protocol**, allowing direct connection to the **Roastmaster** iOS app.
 
-The RDP Protocol is an OpenSource communications protocol created by Rainfrog, Inc. for the purpose of standardizing the transmission of roasting information to Roastmaster.
+Unlike standard temperature loggers, this system uses a custom **Phase Monitor** to "listen" to the roaster's internal circuitry, decoding the exact Fan Speed (0-9) and Heater Setting (0-9) in real-time by measuring SCR firing angles.
 
-Roastmaster_RDP_Probe_Host and the RDP protocol can function either alone, or alongside other hosts. Each host has a unique Serial Number string to identify itself to the server, which can negotiate simple SYN/ACK handshaking. So, we (the client) need only perform a multicast with our Serial Number and a synch (SYN) request, and await a response from Roastmaster (the server) in the form of an acknowledgement (ACK).
+## Features
 
-Once the ACK has been received, we commence sending our thermocouple data to the server's (Roastmaster's) IP address.
+* **Bluetooth BLE Server:** Emulates the RoastProbe protocol for seamless Roastmaster integration.
+* **Real-Time Phase Monitoring:** Uses `pigpio` DMA timing to measure the delay between AC Zero Crossing and SCR pulses (Fan & Heater) with microsecond precision.
+* **Multi-Sensor Support:**
+* **Bean Temperature:** via MCP9600 Thermocouple Amplifier.
+* **Environmental Data:** Exhaust Temp, Humidity, and CO2 Density (g/m³) via SCD-41.
 
-## Code Development
 
-Python code is currently in development and is in the develop branch of this fork. 
+* **Dual Logging:** Automatically writes roast logs to:
+* **CSV:** `~/roasty/logs/` (for archival).
+* **JSON:** `/var/www/html/RBP-Pi/` (for web dashboards).
 
-## Acknowledgements
 
-Danny Hall (Rainfrog, Inc.) - Thanks for all the support and amazing launching point!
+* **Physical Controls:** Rugged metal pushbutton for safe shutdown with status LED feedback.
+* **Safety:** Automatic sensor cleanup and safe shutdown sequences to prevent file corruption or I2C bus lockups.
 
-Evan Graham - Thanks for your incredibly imaginative solution to a seemingly insurmountable enigma by developing the first working prototype for getting digital readings from a rotating Gene Cafe drum
+## Hardware Requirements
 
-Robert Swift - Thanks for your impetus, vision and code prototyping
+### Core Components
+
+* **Raspberry Pi:** Pi Zero W, 3B+, or 4 (Requires Bluetooth & WiFi).
+* **Adafruit MCP9600:** I2C Thermocouple Amplifier (Address `0x67`).
+* **Adafruit SCD-41:** NDIR CO2, Temperature, and Humidity Sensor (Address `0x62`).
+* **Type-K Thermocouple:** For Bean Probe.
+
+### Phase Monitor Interface (High Voltage)
+
+* **4-Channel Logic Level Shifter:** **Adafruit BSS138** (Critical for protecting Pi GPIOs from 5V logic).
+* **Optocouplers:** To isolate AC Mains ZCD and SCR pulses (inside the roaster) from the logic shifter.
+* **Resistors:** 220Ω - 470Ω (for Button LED).
+
+### Controls
+
+* **Momentary Pushbutton:** 16mm Rugged Metal Button with built-in Ring LED (e.g., Adafruit #1477).
+
+## Wiring Guide
+
+### GPIO Pinout
+
+| Component | Pin / Function | Raspberry Pi Pin | Notes |
+| --- | --- | --- | --- |
+| **I2C Bus** | SDA | GPIO 2 (Physical 3) | Shared by MCP9600 & SCD-41 |
+| **I2C Bus** | SCL | GPIO 3 (Physical 5) |  |
+| **Phase Monitor** | ZCD Pulse | **GPIO 17** | From Level Shifter LV1 |
+| **Phase Monitor** | Heater Pulse | **GPIO 22** | From Level Shifter LV3 |
+| **Phase Monitor** | Fan Pulse | **GPIO 27** | From Level Shifter LV2 |
+| **Control** | Shutdown Button | **GPIO 26** | Connect to GND when pressed |
+| **Control** | Status LED (+) | **GPIO 19** | **Requires Series Resistor (330Ω)** |
+
+### LED Button Wiring
+
+* **Switch Contacts:** Connect one side to **GPIO 26**, the other to **GND**.
+* **LED Contacts:** Connect Anode (+) to **GPIO 19** (via 330Ω resistor). Connect Cathode (-) to **GND**.
+
+## Installation
+
+### 1. System Setup
+
+Start with a fresh Raspberry Pi OS (Lite recommended). Enable SSH and I2C.
+
+```bash
+sudo raspi-config
+# Interface Options -> I2C -> Enable
+# Interface Options -> SSH -> Enable
+
+```
+
+### 2. Install Dependencies
+
+This project relies on `pigpio` for precise timing and `blinka` for CircuitPython hardware support.
+
+```bash
+sudo apt-get update
+sudo apt-get install python3-pip pigpio python3-pigpio git
+
+# Install Python Libraries
+sudo pip3 install adafruit-circuitpython-mcp9600
+sudo pip3 install adafruit-circuitpython-scd4x
+sudo pip3 install bluezero
+
+```
+
+### 3. Enable the PIGPIO Daemon
+
+The script requires the `pigpiod` daemon to be running for phase monitoring.
+
+```bash
+sudo systemctl enable pigpiod
+sudo systemctl start pigpiod
+
+```
+
+### 4. Clone Repository
+
+```bash
+cd ~
+git clone https://github.com/YOUR_USERNAME/RBP-Pi.git
+cd RBP-Pi
+
+```
+
+## Usage
+
+### Manual Run
+
+To test the system, run the production script manually:
+
+```bash
+sudo python3 RBP-Pi_Production_0-7-0.py
+
+```
+
+* **LED Behavior:**
+* **Solid/Blinking:** System Active / Sampling.
+* **Rapid Flash:** Shutdown sequence initiated.
+
+
+
+### Auto-Start Service (Systemd)
+
+To have the software start automatically on boot:
+
+1. Edit the service file:
+```bash
+sudo nano /etc/systemd/system/roastprobe.service
+
+```
+
+
+2. Paste the following configuration:
+```ini
+[Unit]
+Description=RoastProbe Bluetooth Service
+After=bluetooth.target pigpiod.service
+Requires=pigpiod.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/RBP-Pi
+ExecStart=/usr/bin/python3 /home/pi/RBP-Pi/RBP-Pi_Production_0-7-0.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+
+3. Enable the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable roastprobe.service
+sudo systemctl start roastprobe.service
+
+```
+
+
+
+## Phase Monitor Calibration
+
+The script maps the delay between the **Zero Crossing** and the **SCR Firing Pulse** to a 0-9 setting using piecewise linear interpolation.
+
+**Current Calibration (SR800 @ 60Hz):**
+
+| Setting | Heater Delay (ms) | Fan Delay (ms) |
+| --- | --- | --- |
+| **9 (Max)** | 0.8 ms | 2.0 ms |
+| **5 (Mid)** | 2.1 ms | 3.9 ms |
+| **1 (Low)** | 2.9 ms | 4.7 ms |
+| **0 (Off)** | > 8.3 ms | > 8.3 ms |
+
+*Note: These values are specific to 60Hz mains frequency. If used in a 50Hz region, recalibration of `HALF_CYCLE_US` and curve points is required.*
+
+## Shutdown Button
+
+To safely shut down the Pi:
+
+1. **Press and Hold** the button for **2 seconds**.
+2. The LED will flash rapidly to acknowledge.
+3. Release the button.
+4. The system will close all log files, stop sensors, and execute `sudo shutdown -h now`.
+5. Once the LED turns off completely, it is safe to remove power.
+
+## Safety Warning
+
+**DANGER: HIGH VOLTAGE**
+This project requires interfacing with the internal circuitry of a coffee roaster, which involves AC Mains voltage (120V/240V).
+
+* **Isolation is mandatory.** Never connect the Raspberry Pi directly to the roaster's control board. You must use optocouplers and logic level shifters.
+* **Do not attempt** this if you are not comfortable working with high-voltage electronics.
+* The authors assume no liability for damage to equipment or personal injury.
+
+---
+
+*Developed for the home roasting community.*
